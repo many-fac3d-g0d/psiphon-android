@@ -29,23 +29,24 @@ jobs:
     - name: Grant Execute Permission for Gradle
       run: chmod +x ./gradlew
 
-    # FIX: Initialize the missing EmbeddedValues file using the repository stub
     - name: Initialize EmbeddedValues Configuration
       run: |
         cp app/src/main/java/com/psiphon3/psiphonlibrary/EmbeddedValues.java.stub app/src/main/java/com/psiphon3/psiphonlibrary/EmbeddedValues.java
 
+    # FIX: Using isolated paths and a versioned key to force a clean environment
     - name: Cache Gradle Packages
       uses: actions/cache@v4
       with:
         path: |
-          ~/.gradle/caches
+          ~/.gradle/caches/modules-2
           ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        key: ${{ runner.os }}-gradle-v2-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
         restore-keys: |
-          ${{ runner.os }}-gradle-
+          ${{ runner.os }}-gradle-v2-
 
+    # FIX: Added --no-build-cache to bypass local transform-4 errors if the daemon acts up
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --stacktrace
+      run: ./gradlew assembleDebug --no-build-cache --stacktrace
 
     - name: Upload Debug APK Artifact
       uses: actions/upload-artifact@v4
