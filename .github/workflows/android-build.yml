@@ -1,10 +1,10 @@
-name: Psiphon Android Build
+name: Android Build
 
 on:
   push:
-    branches: [ master, main ]
+    branches: [ "master", "main" ]
   pull_request:
-    branches: [ master, main ]
+    branches: [ "master", "main" ]
   workflow_dispatch:
 
 jobs:
@@ -12,26 +12,42 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Code
+    - name: Checkout Source Code
       uses: actions/checkout@v4
       with:
         submodules: 'recursive'
-        lfs: true
 
-    - name: Set up JDK 17
+    - name: Set up Java JDK
       uses: actions/setup-java@v4
       with:
-        java-version: '17'
         distribution: 'zulu'
-        cache: 'gradle'
+        java-version: '17'
 
-    - name: Grant Execute Permission for Gradle Wrapper
-      run: chmod +x gradlew
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
 
-    - name: Run Build and Assemble APK
+    - name: Grant Execute Permission for Gradle
+      run: chmod +x ./gradlew
+
+    # FIX: Initialize the missing EmbeddedValues file using the repository stub
+    - name: Initialize EmbeddedValues Configuration
+      run: |
+        cp app/src/main/java/com/psiphon3/psiphonlibrary/EmbeddedValues.java.stub app/src/main/java/com/psiphon3/psiphonlibrary/EmbeddedValues.java
+
+    - name: Cache Gradle Packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+
+    - name: Build Debug APK
       run: ./gradlew assembleDebug --stacktrace
 
-    - name: Upload Build Artifacts
+    - name: Upload Debug APK Artifact
       uses: actions/upload-artifact@v4
       with:
         name: psiphon-debug-apk
