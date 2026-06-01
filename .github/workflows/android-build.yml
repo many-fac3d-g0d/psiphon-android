@@ -15,14 +15,17 @@ jobs:
     - name: Checkout Source Code
       uses: actions/checkout@v4
       with:
-        submodules: 'recursive'
+        submodules: 'recursive' # Vital for fetching local psiphon submodules
 
+    # FIX: Uses the official gradle caching logic native to the setup-java action
     - name: Set up Java JDK
       uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '17'
+        cache: 'gradle' 
 
+    # FIX: Explicitly setup and update Android SDK components
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
 
@@ -33,20 +36,9 @@ jobs:
       run: |
         cp app/src/main/java/com/psiphon3/psiphonlibrary/EmbeddedValues.java.stub app/src/main/java/com/psiphon3/psiphonlibrary/EmbeddedValues.java
 
-    # FIX: Using isolated paths and a versioned key to force a clean environment
-    - name: Cache Gradle Packages
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.gradle/caches/modules-2
-          ~/.gradle/wrapper
-        key: ${{ runner.os }}-gradle-v2-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-v2-
-
-    # FIX: Added --no-build-cache to bypass local transform-4 errors if the daemon acts up
+    # FIX: Force a clean download of missing internal dependencies via refresh-dependencies
     - name: Build Debug APK
-      run: ./gradlew assembleDebug --no-build-cache --stacktrace
+      run: ./gradlew assembleDebug --refresh-dependencies --stacktrace
 
     - name: Upload Debug APK Artifact
       uses: actions/upload-artifact@v4
